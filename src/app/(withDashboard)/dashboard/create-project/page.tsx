@@ -163,11 +163,19 @@ const CreateProject = () => {
               {...register("category", { required: "Category is required" })}
               className="block w-full py-3 text-gray-700 uppercase bg-white border rounded-lg pl-4 focus:to-indigo-600 from-purple-600 focus:outline-none focus:ring focus:ring-opacity-40"
             >
-              <option value="">Select a category</option>
-              <option value="Technology">Technology</option>
-              <option value="Health">Health</option>
-              <option value="Lifestyle">Lifestyle</option>
-              <option value="Business">Business</option>
+              <option  value="">Select a category</option>
+                <option value="Technology">Portfolio Website</option>
+                <option value="Health">E-commerce Website</option>
+                <option value="Lifestyle">Learning/Tutoring Platform</option>
+                <option value="Business">Job Board Website</option>
+                <option value="Business">Blogging Platform</option>
+                <option value="Business">
+                  SaaS Dashboard (Analytics/CRM/HRM/etc.)
+                </option>
+                <option value="Business">Real Estate Listing Website</option>
+                <option value="Business">Forum/Community Website</option>
+                <option value="Business">Event Management Website</option>
+                <option value="Business">Travel Booking Website</option>
             </select>
             {errors.category && (
               <p className="text-red-500 text-xs mt-1">
