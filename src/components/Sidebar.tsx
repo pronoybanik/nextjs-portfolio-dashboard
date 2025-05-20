@@ -1,6 +1,6 @@
 "use client";
 
-import { protectedRoutes } from "@/contants";
+
 import { logout } from "@/service/auth";
 import SecondaryButton from "@/shared/SecondaryButton";
 import Link from "next/link";
@@ -11,15 +11,11 @@ import { IoIosContact } from "react-icons/io";
 import { TbLogs } from "react-icons/tb";
 
 const Sidebar = () => {
-  const pathname = usePathname();
   const routes = useRouter();
 
   const handleLogout = () => {
     logout();
-
-    if (protectedRoutes.some((route) => pathname.match(route))) {
-      routes.push("/login");
-    }
+    routes.push("/login");
   };
 
   return (
