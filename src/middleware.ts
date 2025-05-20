@@ -17,8 +17,6 @@ export const middleware = async (request: NextRequest) => {
   const { pathname } = request.nextUrl;
   const userInfo = await getCurrentUser();
 
-  console.log("user info", userInfo);
-
   // If user is NOT logged in
   if (!userInfo) {
     if (authRoutes.includes(pathname)) {

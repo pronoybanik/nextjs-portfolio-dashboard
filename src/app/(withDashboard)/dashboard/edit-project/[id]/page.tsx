@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
-import { TProject } from "@/app/types/projectType";
+import { TProject } from "@/types/projectType";
 
 const EditProject = () => {
   const { id } = useParams(); // Get project ID from URL

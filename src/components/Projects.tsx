@@ -1,7 +1,7 @@
 import ProductItem from "@/components/ProductItem";
 import React from "react";
 import Link from "next/link";
-import { TProject } from "@/app/types/projectType";
+import { TProject } from "@/types/projectType";
 
 const Projects = async ({ loadId }: { loadId: string }) => {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/project`, {

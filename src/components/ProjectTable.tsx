@@ -1,4 +1,4 @@
-import { TProject } from "@/app/types/projectType";
+import { TProject } from "@/types/projectType";
 import React from "react";
 
 interface ProjectTableProps {

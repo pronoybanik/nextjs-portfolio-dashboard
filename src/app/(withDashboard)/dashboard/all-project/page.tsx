@@ -1,6 +1,6 @@
 "use client";
-import { TProject } from "@/app/types/projectType";
 import ProjectTable from "@/components/ProjectTable";
+import { TProject } from "@/types/projectType";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 

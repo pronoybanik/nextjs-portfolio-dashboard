@@ -1,4 +1,4 @@
-import { TProject } from "@/app/types/projectType";
+import { TProject } from "@/types/projectType";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
