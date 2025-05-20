@@ -2,7 +2,7 @@
 
 import { protectedRoutes } from "@/contants";
 import { logout } from "@/service/auth";
-import PrimaryButton from "@/shared/PrimaryButton";
+import SecondaryButton from "@/shared/SecondaryButton";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FaHome, FaProjectDiagram, FaBloggerB } from "react-icons/fa";
@@ -81,7 +81,7 @@ const Sidebar = () => {
         </li>
         <li>
           <div className="hidden sm:flex sm:gap-4">
-            <PrimaryButton handler={handleLogout}>Logout</PrimaryButton>
+            <SecondaryButton handler={handleLogout}>Logout</SecondaryButton>
           </div>
         </li>
       </ul>
