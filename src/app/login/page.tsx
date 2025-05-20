@@ -2,13 +2,10 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import SecondaryButton from "@/shared/SecondaryButton";
+import { loginUser } from "@/service/auth";
 
-const Register = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
+const Login = () => {
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -21,25 +18,24 @@ const Register = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
+  
+  
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Registration failed");
-
-      alert("Registration Successful!");
-      router.push("/login"); // Redirect after registration
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
+      const res = await loginUser(formData);
+      
+      if (res?.token) {
+        alert(res.message || "Login successful!");
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1000);
       } else {
-        setError("An unexpected error occurred");
+        alert(res.message || "Login failed.");
       }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -49,19 +45,9 @@ const Register = () => {
         onSubmit={handleSubmit}
         className="bg-white p-6 shadow-lg rounded-lg w-full max-w-md"
       >
-        <h2 className="text-2xl font-semibold text-center mb-4">Register</h2>
+        <h2 className="text-2xl font-semibold text-center mb-4">Login</h2>
 
         {error && <p className="text-red-500 text-center mb-2">{error}</p>}
-
-        <input
-          type="text"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          placeholder="Full Name"
-          className="w-full mb-3 p-2 border rounded"
-          required
-        />
 
         <input
           type="email"
@@ -83,14 +69,15 @@ const Register = () => {
           required
         />
 
+        {/* <PrimaryButton>{loading ? "Logging in..." : "Login"}</PrimaryButton> */}
         <SecondaryButton type="submit">
-          {loading ? "Registering..." : "Register"}
+          {loading ? "Logging in..." : "Login"}
         </SecondaryButton>
 
         <p className="text-center mt-3">
-          Already have an account?{" "}
-          <a href="/login" className="text-blue-500">
-            Login
+          Do not have an account?{" "}
+          <a href="/register" className="text-blue-500">
+            Register
           </a>
         </p>
       </form>
@@ -98,4 +85,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default Login;
