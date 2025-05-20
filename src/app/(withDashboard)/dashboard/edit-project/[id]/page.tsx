@@ -23,7 +23,9 @@ const EditProject = () => {
     if (!id) return;
     const fetchProject = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/project/${id}`);
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/project/${id}`
+        );
         const data = await res.json();
         setExistingData(data.data);
       } catch (error) {
@@ -64,11 +66,14 @@ const EditProject = () => {
       }
 
       // Send updated data to backend
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/project/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(projectData),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/project/${id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(projectData),
+        }
+      );
 
       if (!res.ok) throw new Error("Failed to update project");
 
@@ -123,10 +128,19 @@ const EditProject = () => {
             {...register("category")}
             className="w-full p-2 border rounded"
           >
-            <option value="Technology">Technology</option>
-            <option value="Health">Health</option>
-            <option value="Lifestyle">Lifestyle</option>
-            <option value="Business">Business</option>
+            <option value="">Select a category</option>
+            <option value="Technology">Portfolio Website</option>
+            <option value="Health">E-commerce Website</option>
+            <option value="Lifestyle">Learning/Tutoring Platform</option>
+            <option value="Business">Job Board Website</option>
+            <option value="Business">Blogging Platform</option>
+            <option value="Business">
+              SaaS Dashboard (Analytics/CRM/HRM/etc.)
+            </option>
+            <option value="Business">Real Estate Listing Website</option>
+            <option value="Business">Forum/Community Website</option>
+            <option value="Business">Event Management Website</option>
+            <option value="Business">Travel Booking Website</option>
           </select>
         </div>
 
