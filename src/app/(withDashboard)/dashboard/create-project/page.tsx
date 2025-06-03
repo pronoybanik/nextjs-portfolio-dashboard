@@ -165,7 +165,8 @@ const CreateProject = () => {
             >
               <option value="">Select a category</option>
               <option value="Technology">Portfolio Website</option>
-              <option value="Health">E-commerce Website</option>
+              <option value="Business">E-commerce Website</option>
+              <option value="Health">Hospital Management</option>
               <option value="Lifestyle">Learning/Tutoring Platform</option>
               <option value="Business">Job Board Website</option>
               <option value="Business">Blogging Platform</option>
