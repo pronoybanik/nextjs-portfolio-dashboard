@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 
 
@@ -14,6 +14,8 @@ const BlogForm = () => {
   });
 
   const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const routes = useRouter();
 
@@ -29,6 +31,17 @@ const BlogForm = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setFormData((prev) => ({ ...prev, image: file }));
+    setPreview(file ? URL.createObjectURL(file) : null);
+  };
+
+  useEffect(() => () => {
+    if (preview) URL.revokeObjectURL(preview);
+  }, [preview]);
+
+  const removeImage = () => {
+    setFormData((prev) => ({ ...prev, image: null }));
+    setPreview(null);
+    if (imageInputRef.current) imageInputRef.current.value = "";
   };
 
   // Handle form submission
@@ -158,7 +171,23 @@ const BlogForm = () => {
           <label className="block text-sm font-medium text-gray-700 uppercase mb-1">
             Upload Image
           </label>
+          {preview && (
+            <div className="relative mb-3 h-40 overflow-hidden rounded border">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={preview} alt="Selected blog preview" className="h-full w-full object-cover" />
+              <button
+                type="button"
+                onClick={removeImage}
+                aria-label="Remove selected blog image"
+                title="Remove image"
+                className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-rose-600 text-lg font-bold leading-none text-white shadow-md hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              >
+                ×
+              </button>
+            </div>
+          )}
           <input
+            ref={imageInputRef}
             type="file"
             accept="image/*"
             onChange={handleFileChange}

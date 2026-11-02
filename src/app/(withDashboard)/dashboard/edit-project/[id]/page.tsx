@@ -9,12 +9,16 @@ const EditProject = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [existingData, setExistingData] = useState<TProject | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageInputKey, setImageInputKey] = useState(0);
+  const [imageRemoved, setImageRemoved] = useState(false);
 
   const {
     register,
     handleSubmit,
 
     control,
+    setValue,
     formState: { errors },
   } = useForm<TProject>();
 
@@ -61,6 +65,8 @@ const EditProject = () => {
 
         const imgData = await imageRes.json();
         projectData.image = imgData.secure_url;
+      } else if (imageRemoved) {
+        projectData.image = "";
       } else {
         delete projectData.image;
       }
@@ -182,18 +188,59 @@ const EditProject = () => {
         {/* Image Upload */}
         <div>
           <label className="block text-sm font-medium">Image (optional)</label>
+          {(existingData.image || selectedImage) && (
+            <div className="relative mb-2 h-32 w-32">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={selectedImage || existingData.image}
+                alt="Project preview"
+                className="h-32 w-32 rounded object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setExistingData((current) => current ? { ...current, image: undefined } : current);
+                  setSelectedImage(null);
+                  setImageRemoved(true);
+                  setValue("image", undefined);
+                  setImageInputKey((key) => key + 1);
+                }}
+                aria-label="Remove project image"
+                title="Remove image"
+                className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-base font-bold leading-none text-white shadow-md hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              >
+                ×
+              </button>
+            </div>
+          )}
           <Controller
             name="image"
             control={control}
             render={({ field }) => (
               <input
+                key={imageInputKey}
                 type="file"
+                accept="image/*"
                 onChange={(e) => field.onChange(e.target.files)}
+                onInput={(e) => {
+                  const file = (e.currentTarget as HTMLInputElement).files?.[0];
+                  setSelectedImage(file ? URL.createObjectURL(file) : null);
+                  if (file) setImageRemoved(false);
+                }}
                 className="w-full p-2 border rounded"
               />
             )}
           />
         </div>
+
+        <label className="flex items-center gap-3 text-sm font-medium">
+          <input type="checkbox" defaultChecked={existingData?.isActive ?? true} {...register("isActive")} />
+          Publish project
+        </label>
+        <label className="block text-sm font-medium">
+          Display order
+          <input type="number" min={0} defaultValue={existingData?.displayOrder ?? 0} {...register("displayOrder", { valueAsNumber: true })} className="mt-1 w-full rounded border p-2" />
+        </label>
 
         {/* Submit Button */}
         <button

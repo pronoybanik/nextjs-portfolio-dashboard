@@ -10,4 +10,6 @@ export type TProject = {
   title: string;
   updatedAt: string;
   __v: number;
+  isActive: boolean;
+  displayOrder: number;
 };

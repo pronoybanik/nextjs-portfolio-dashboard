@@ -17,6 +17,8 @@ const EditBlog = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [existingImage, setExistingImage] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageInputKey, setImageInputKey] = useState(0);
 
   const {
     register,
@@ -24,6 +26,7 @@ const EditBlog = () => {
     setValue,
     formState: { errors },
   } = useForm<BlogFormData>();
+  const imageRegistration = register("image");
 
   useEffect(() => {
     if (!id) return;
@@ -94,6 +97,13 @@ const EditBlog = () => {
     }
   };
 
+  const removeImage = () => {
+    setExistingImage(null);
+    setSelectedImage(null);
+    setValue("image", undefined);
+    setImageInputKey((key) => key + 1);
+  };
+
   return (
     <div className="max-w-lg mx-auto my-10 p-6 shadow-lg rounded-lg bg-white">
       <h2 className="text-2xl font-bold mb-4 text-indigo-600">Edit Blog</h2>
@@ -140,12 +150,38 @@ const EditBlog = () => {
 
         <div>
           <label className="block text-sm font-medium">Image</label>
-          {existingImage && (
-            <div className="mb-2">
-              <Image width={300} height={300} src={existingImage} alt="Blog" className="w-32 h-32 object-cover rounded" />
+          {(existingImage || selectedImage) && (
+            <div className="relative mb-2 h-32 w-32">
+              {existingImage ? (
+                <Image width={300} height={300} src={existingImage} alt="Blog" className="h-32 w-32 rounded object-cover" />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={selectedImage ?? ""} alt="Selected blog preview" className="h-32 w-32 rounded object-cover" />
+              )}
+              <button
+                type="button"
+                onClick={removeImage}
+                aria-label="Remove blog image"
+                title="Remove image"
+                className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-base font-bold leading-none text-white shadow-md hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              >
+                ×
+              </button>
             </div>
           )}
-          <input type="file" {...register("image")} className="w-full p-2 border rounded" />
+          <input
+            key={imageInputKey}
+            type="file"
+            accept="image/*"
+            {...imageRegistration}
+            onChange={(event) => {
+              imageRegistration.onChange(event);
+              const file = event.target.files?.[0];
+              setExistingImage(null);
+              setSelectedImage(file ? URL.createObjectURL(file) : null);
+            }}
+            className="w-full rounded border p-2"
+          />
         </div>
 
         <button

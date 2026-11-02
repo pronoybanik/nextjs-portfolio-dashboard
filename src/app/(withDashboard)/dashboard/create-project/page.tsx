@@ -1,276 +1,462 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
-// Define form data type
-interface BookFormData {
+interface ProjectFormData {
   title: string;
   category: string;
   description: string;
   frontEndGitLink: string;
   backEndGitLink: string;
   liveLink: string;
-  inStock: boolean;
   image: FileList;
+  isActive: boolean;
+  displayOrder: number;
 }
+
+const CATEGORIES = [
+  "Portfolio Website",
+  "E-commerce Website",
+  "Hospital Management",
+  "Learning/Tutoring Platform",
+  "Job Board Website",
+  "Blogging Platform",
+  "SaaS Dashboard (Analytics/CRM/HRM/etc.)",
+  "Real Estate Listing Website",
+  "Forum/Community Website",
+  "Event Management Website",
+  "Travel Booking Website",
+];
+
+const urlRule = (label: string) => ({
+  required: `${label} is required`,
+  pattern: {
+    value: /^https?:\/\/.+\..+/i,
+    message: "Enter a full link starting with http:// or https://",
+  },
+});
+
+const inputClass =
+  "block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/25";
+
+const Field = ({
+  label,
+  hint,
+  error,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  error?: string;
+  children: React.ReactNode;
+}) => (
+  <label className="block">
+    <span className="mb-1.5 block text-sm font-medium text-slate-800">
+      {label}
+    </span>
+    {children}
+    {error ? (
+      <span className="mt-1.5 block text-xs font-medium text-red-600">
+        {error}
+      </span>
+    ) : hint ? (
+      <span className="mt-1.5 block text-xs text-slate-500">{hint}</span>
+    ) : null}
+  </label>
+);
+
+const Section = ({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) => (
+  <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+    <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+    <p className="mb-5 mt-0.5 text-sm text-slate-500">{description}</p>
+    <div className="space-y-5">{children}</div>
+  </section>
+);
 
 const CreateProject = () => {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
     reset,
-  } = useForm<BookFormData>();
+    resetField,
+  } = useForm<ProjectFormData>({
+    defaultValues: { isActive: true, displayOrder: 0 },
+  });
 
   const router = useRouter();
-
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<{
+    type: "error" | "success";
+    message: string;
+  } | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
 
-  const onSubmit = async (data: BookFormData) => {
-    const imageValue = data.image[0];
+  // Live preview of the selected image
+  const imageFiles = watch("image");
+  useEffect(() => {
+    const file = imageFiles?.[0];
+    if (!file) {
+      setPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFiles]);
+
+  const isActive = watch("isActive");
+
+  const onSubmit = async (data: ProjectFormData) => {
+    setStatus(null);
+    const imageValue = data.image?.[0];
     if (!imageValue) {
-      alert("Please upload an image.");
+      setStatus({ type: "error", message: "Add a cover image to continue." });
       return;
     }
 
-    setLoading(true); // Start loading
-
-    const formData = new FormData();
-    formData.append("file", imageValue);
-    formData.append("upload_preset", "Book-sell-shop"); // Replace with your preset
-    formData.append("cloud_name", "dvcbclqid"); // Replace with your cloud name
+    setLoading(true);
 
     try {
+      const formData = new FormData();
+      formData.append("file", imageValue);
+      formData.append("upload_preset", "Book-sell-shop");
+      formData.append("cloud_name", "dvcbclqid");
+
       const imageResponse = await fetch(
         `https://api.cloudinary.com/v1_1/dvcbclqid/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
+        { method: "POST", body: formData }
       );
 
       if (!imageResponse.ok) {
-        const errorData = await imageResponse.json(); // Get error details if available
-        alert(
-          `Image upload failed: ${
-            errorData?.message || imageResponse.statusText
-          }`
-        );
+        const errorData = await imageResponse.json().catch(() => null);
+        setStatus({
+          type: "error",
+          message: `Image upload failed: ${
+            errorData?.error?.message ||
+            errorData?.message ||
+            imageResponse.statusText
+          }`,
+        });
         return;
       }
 
       const imgData = await imageResponse.json();
-      const bookImageUrl = imgData.secure_url;
 
       const projectData = {
         title: data.title,
         content: data.description,
-        image: bookImageUrl,
+        image: imgData.secure_url,
         frontEndGitLink: data.frontEndGitLink,
         backEndGitLink: data.backEndGitLink,
         liveLink: data.liveLink,
         category: data.category,
+        isActive: data.isActive,
+        displayOrder: data.displayOrder,
       };
 
       const projectResponse = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/project`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json", // Important: Set content type
-          },
-          body: JSON.stringify(projectData), // Stringify the data
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(projectData),
         }
       );
 
       if (!projectResponse.ok) {
-        const errorData = await projectResponse.json();
-        alert(
-          `Project creation failed: ${
+        const errorData = await projectResponse.json().catch(() => null);
+        setStatus({
+          type: "error",
+          message: `Project creation failed: ${
             errorData?.message || projectResponse.statusText
-          }`
-        );
+          }`,
+        });
         return;
       }
 
-      alert("Project created successfully!");
+      setStatus({
+        type: "success",
+        message: "Project created. Taking you to all projects…",
+      });
       setTimeout(() => {
         reset();
         router.push("/dashboard/all-project");
       }, 1000);
     } catch (err) {
       console.error("Error:", err);
-      alert("An error occurred. Please try again later.");
+      setStatus({
+        type: "error",
+        message: "Something went wrong. Check your connection and try again.",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="mx-auto max-w-screen-xl lg:my-4 my-2">
-      <div className="text-center my-10">
-        <h2 className="text-4xl my-4 md:my-6 font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 leading-tight uppercase">
-          create Project
-        </h2>
-      </div>
-      <div className="mx-auto max-w-lg">
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="mb-0 mt-6 space-y-4 rounded-lg p-4 shadow-lg sm:p-6 lg:p-8"
-        >
-          <p className="text-center text-lg font-medium">Add a New Project</p>
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-12">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+          New project
+        </h1>
+        <p className="mt-1.5 max-w-xl text-sm text-slate-600">
+          Add a project to your portfolio. You can hide it from visitors until
+          it&apos;s ready.
+        </p>
+      </header>
 
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 uppercase">
-              Title
-            </label>
-            <input
-              type="text"
-              {...register("title", { required: "Title is required" })}
-              className="block w-full py-3 text-gray-700  bg-white border rounded-lg pl-4 focus:to-indigo-600 from-purple-600 focus:outline-none focus:ring focus:ring-opacity-40"
-            />
-            {errors.title && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.title.message}
-              </p>
-            )}
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 uppercase">
-              Description
-            </label>
-            <textarea
-              {...register("description", {
-                required: "Description is required",
-              })}
-              className="block w-full py-3 text-gray-700 bg-white border rounded-lg pl-4 focus:to-indigo-600 from-purple-600 focus:outline-none focus:ring focus:ring-opacity-40"
-            />
-            {errors.description && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.description.message}
-              </p>
-            )}
-          </div>
-
-          {/* Category */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 uppercase">
-              Category
-            </label>
-            <select
-              {...register("category", { required: "Category is required" })}
-              className="block w-full py-3 text-gray-700 uppercase bg-white border rounded-lg pl-4 focus:to-indigo-600 from-purple-600 focus:outline-none focus:ring focus:ring-opacity-40"
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+          {/* Main column */}
+          <div className="space-y-6">
+            <Section
+              title="Project details"
+              description="What visitors see on the project card."
             >
-              <option value="">Select a category</option>
-              <option value="Technology">Portfolio Website</option>
-              <option value="Business">E-commerce Website</option>
-              <option value="Health">Hospital Management</option>
-              <option value="Lifestyle">Learning/Tutoring Platform</option>
-              <option value="Business">Job Board Website</option>
-              <option value="Business">Blogging Platform</option>
-              <option value="Business">
-                SaaS Dashboard (Analytics/CRM/HRM/etc.)
-              </option>
-              <option value="Business">Real Estate Listing Website</option>
-              <option value="Business">Forum/Community Website</option>
-              <option value="Business">Event Management Website</option>
-              <option value="Business">Travel Booking Website</option>
-            </select>
-            {errors.category && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.category.message}
-              </p>
-            )}
-          </div>
+              <Field label="Title" error={errors.title?.message}>
+                <input
+                  type="text"
+                  placeholder="e.g. Hospital booking system"
+                  {...register("title", { required: "Title is required" })}
+                  className={inputClass}
+                />
+              </Field>
 
-          {/* Image */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 uppercase">
-              Image
-            </label>
-            <input
-              type="file"
-              {...register("image", { required: "Image is required" })}
-              className="block w-full py-3 text-gray-700 bg-white border rounded-lg pl-4 focus:to-indigo-600 from-purple-600 focus:outline-none focus:ring focus:ring-opacity-40"
-            />
-            {errors.image && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.image.message}
-              </p>
-            )}
-          </div>
+              <Field label="Category" error={errors.category?.message}>
+                <select
+                  {...register("category", {
+                    required: "Choose a category",
+                  })}
+                  className={inputClass}
+                >
+                  <option value="">Select a category</option>
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </Field>
 
-          {/* frontEndGigLink */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 uppercase">
-              FrontEnd GigLink
-            </label>
-            <input
-              type="text"
-              {...register("frontEndGitLink", {
-                required: "Title is required",
-              })}
-              className="block w-full py-3 text-gray-700  bg-white border rounded-lg pl-4 focus:to-indigo-600 from-purple-600 focus:outline-none focus:ring focus:ring-opacity-40"
-            />
-            {errors.frontEndGitLink && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.frontEndGitLink.message}
-              </p>
-            )}
-          </div>
-          {/* backEndGitLink */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 uppercase">
-              backEnd GitLink
-            </label>
-            <input
-              type="text"
-              {...register("backEndGitLink", {
-                required: "Title is required",
-              })}
-              className="block w-full py-3 text-gray-700  bg-white border rounded-lg pl-4 focus:to-indigo-600 from-purple-600 focus:outline-none focus:ring focus:ring-opacity-40"
-            />
-            {errors.backEndGitLink && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.backEndGitLink.message}
-              </p>
-            )}
-          </div>
-          {/* backEndGitLink */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 uppercase">
-              live Link
-            </label>
-            <input
-              type="text"
-              {...register("liveLink", {
-                required: "Title is required",
-              })}
-              className="block w-full py-3 text-gray-700  bg-white border rounded-lg pl-4 focus:to-indigo-600 from-purple-600 focus:outline-none focus:ring focus:ring-opacity-40"
-            />
-            {errors.liveLink && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.liveLink.message}
-              </p>
-            )}
-          </div>
+              <Field label="Description" error={errors.description?.message}>
+                <textarea
+                  rows={6}
+                  placeholder="What does it do, who is it for, and what did you build?"
+                  {...register("description", {
+                    required: "Description is required",
+                  })}
+                  className={`${inputClass} resize-y`}
+                />
+              </Field>
+            </Section>
 
-          {/* Submit */}
-          <div className="flex justify-center">
-            <button
-              type="submit"
-              className={`w-60 px-5 py-3 text-base font-medium text-center text-indigo-100 border border-indigo-500 rounded-lg shadow-sm cursor-pointer hover:text-white bg-gradient-to-br from-purple-500 via-indigo-500 to-indigo-500 ${
-                loading ? "cursor-not-allowed opacity-75" : ""
-              }`}
-              disabled={loading}
+            <Section
+              title="Links"
+              description="Where people can see the code and the live site."
             >
-              {loading ? "Loading..." : "Add Project"}
-            </button>
+              <Field
+                label="Live site"
+                error={errors.liveLink?.message}
+              >
+                <input
+                  type="url"
+                  inputMode="url"
+                  placeholder="https://myproject.com"
+                  {...register("liveLink", urlRule("Live site link"))}
+                  className={inputClass}
+                />
+              </Field>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field
+                  label="Front-end repository"
+                  error={errors.frontEndGitLink?.message}
+                >
+                  <input
+                    type="url"
+                    inputMode="url"
+                    placeholder="https://github.com/you/client"
+                    {...register(
+                      "frontEndGitLink",
+                      urlRule("Front-end repository link")
+                    )}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field
+                  label="Back-end repository"
+                  error={errors.backEndGitLink?.message}
+                >
+                  <input
+                    type="url"
+                    inputMode="url"
+                    placeholder="https://github.com/you/server"
+                    {...register(
+                      "backEndGitLink",
+                      urlRule("Back-end repository link")
+                    )}
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
+            </Section>
           </div>
-        </form>
-      </div>
+
+          {/* Side column */}
+          <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+            <Section
+              title="Cover image"
+              description="Shown at the top of the project card."
+            >
+              <div
+                className={`flex aspect-video items-center justify-center overflow-hidden rounded-lg border border-dashed bg-slate-50 ${
+                  errors.image ? "border-red-400" : "border-slate-300"
+                }`}
+              >
+                {preview ? (
+                  <div className="relative h-full w-full">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={preview}
+                      alt="Selected cover preview"
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => resetField("image")}
+                      aria-label="Remove selected cover image"
+                      title="Remove image"
+                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-rose-600 text-lg font-bold leading-none text-white shadow-md transition hover:bg-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <span className="px-4 text-center text-sm text-slate-500">
+                    No image selected
+                  </span>
+                )}
+              </div>
+              <Field label="Choose file" error={errors.image?.message}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  {...register("image", { required: "Add a cover image" })}
+                  className="block w-full cursor-pointer text-sm text-slate-600 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-slate-900 file:px-3.5 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-slate-700"
+                />
+              </Field>
+            </Section>
+
+            <Section
+              title="Visibility"
+              description="Control when and where it appears."
+            >
+              <label className="flex cursor-pointer items-start justify-between gap-4">
+                <span>
+                  <span className="block text-sm font-medium text-slate-800">
+                    Publish project
+                  </span>
+                  <span className="block text-xs text-slate-500">
+                    {isActive
+                      ? "Visible to visitors."
+                      : "Saved as a draft. Only you can see it."}
+                  </span>
+                </span>
+                <span className="relative mt-0.5 inline-flex shrink-0">
+                  <input
+                    type="checkbox"
+                    {...register("isActive")}
+                    className="peer sr-only"
+                  />
+                  <span className="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-teal-600 peer-focus-visible:ring-2 peer-focus-visible:ring-teal-600/40 peer-focus-visible:ring-offset-2" />
+                  <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5" />
+                </span>
+              </label>
+
+              <Field
+                label="Display order"
+                hint="Lower numbers appear first."
+                error={errors.displayOrder?.message}
+              >
+                <input
+                  type="number"
+                  min={0}
+                  {...register("displayOrder", {
+                    valueAsNumber: true,
+                    min: { value: 0, message: "Use 0 or higher" },
+                  })}
+                  className={inputClass}
+                />
+              </Field>
+            </Section>
+          </aside>
+        </div>
+
+        {/* Status + actions */}
+        {status && (
+          <div
+            role={status.type === "error" ? "alert" : "status"}
+            className={`mt-6 rounded-lg border px-4 py-3 text-sm font-medium ${
+              status.type === "error"
+                ? "border-red-200 bg-red-50 text-red-700"
+                : "border-teal-200 bg-teal-50 text-teal-800"
+            }`}
+          >
+            {status.message}
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard/all-project")}
+            disabled={loading}
+            className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600/40 disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {loading && (
+              <svg
+                className="h-4 w-4 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  stroke="currentColor"
+                  strokeOpacity="0.3"
+                  strokeWidth="3"
+                />
+                <path
+                  d="M21 12a9 9 0 0 0-9-9"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+              </svg>
+            )}
+            {loading ? "Creating…" : "Create project"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 };
