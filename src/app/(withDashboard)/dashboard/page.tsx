@@ -991,7 +991,7 @@ const DashboardPage = () => {
           >
             <div className="space-y-4">
               {settings.experience.map((item, index) => (
-                <div key={`${item.company}-${index}`} className={entryCls}>
+                <div key={`experience-${index}`} className={entryCls}>
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-slate-800">
