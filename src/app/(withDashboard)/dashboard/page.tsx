@@ -379,6 +379,15 @@ const DashboardPage = () => {
       },
     }));
   };
+  const removeSocialLink = (index: number) => {
+    setSettings((prev) => ({
+      ...prev,
+      header: {
+        ...prev.header,
+        socialLinks: prev.header.socialLinks.filter((_, i) => i !== index),
+      },
+    }));
+  };
 
   const updateEducation = (
     index: number,
@@ -470,6 +479,22 @@ const DashboardPage = () => {
       next[index] = {
         ...next[index],
         [listKey]: [...(next[index][listKey] ?? []), ""],
+      };
+      return { ...prev, experience: next };
+    });
+  };
+  const removeExperienceItem = (
+    index: number,
+    listKey: "responsibilities" | "skills",
+    itemIndex: number,
+  ) => {
+    setSettings((prev) => {
+      const next = [...prev.experience];
+      next[index] = {
+        ...next[index],
+        [listKey]: (next[index][listKey] ?? []).filter(
+          (_, currentIndex) => currentIndex !== itemIndex,
+        ),
       };
       return { ...prev, experience: next };
     });
@@ -809,8 +834,8 @@ const DashboardPage = () => {
               <div className="space-y-2">
                 {settings.header.socialLinks.map((link, index) => (
                   <div
-                    key={`${link.label}-${index}`}
-                    className="grid gap-2 md:grid-cols-[180px_1fr]"
+                    key={`social-link-${index}`}
+                    className="grid gap-2 md:grid-cols-[180px_1fr_auto]"
                   >
                     <input
                       value={link.label}
@@ -828,6 +853,15 @@ const DashboardPage = () => {
                       placeholder="https://"
                       className={inputCls}
                     />
+                    <button
+                      type="button"
+                      onClick={() => removeSocialLink(index)}
+                      className={removeBtnCls}
+                      aria-label={`Delete ${link.label || "social link"}`}
+                      title="Delete social link"
+                    >
+                      Delete
+                    </button>
                   </div>
                 ))}
               </div>
@@ -1129,20 +1163,39 @@ const DashboardPage = () => {
                     </div>
                     {(item.responsibilities ?? []).map(
                       (responsibility, responsibilityIndex) => (
-                        <input
-                          key={`${item.title}-responsibility-${responsibilityIndex}`}
-                          value={responsibility}
-                          onChange={(e) =>
-                            updateExperienceList(
-                              index,
-                              "responsibilities",
-                              responsibilityIndex,
-                              e.target.value,
-                            )
-                          }
-                          placeholder="What did you do?"
-                          className={inputCls}
-                        />
+                        <div
+                          key={`experience-${index}-responsibility-${responsibilityIndex}`}
+                          className="flex items-center gap-2"
+                        >
+                          <input
+                            value={responsibility}
+                            onChange={(e) =>
+                              updateExperienceList(
+                                index,
+                                "responsibilities",
+                                responsibilityIndex,
+                                e.target.value,
+                              )
+                            }
+                            placeholder="What did you do?"
+                            className={inputCls}
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              removeExperienceItem(
+                                index,
+                                "responsibilities",
+                                responsibilityIndex,
+                              )
+                            }
+                            className={removeBtnCls}
+                            aria-label={`Delete responsibility ${responsibilityIndex + 1}`}
+                            title="Delete responsibility"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       ),
                     )}
                   </div>
